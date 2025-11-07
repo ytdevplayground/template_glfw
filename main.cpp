@@ -4,13 +4,18 @@
 #include <ctime>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 const char* vertexSource = R"(#version 460 core
                               
                               layout ( location = 0) in vec3 aPos;
+
+                              uniform mat4 uModel;
                               
                               void main() {
-                                    gl_Position = vec4(aPos, 1.0f);
+                                    gl_Position = uModel * vec4(aPos, 1.0f);
                               })";
 
 const char* fragmentSource = R"(#version 460 core
@@ -102,6 +107,9 @@ int main (int argc, char** argv)
     glUseProgram(program);
 
     unsigned int location = glGetUniformLocation(program, "uColor");
+    unsigned int modelLocation = glGetUniformLocation(program, "uModel");
+
+    glm::mat4 model{1.0f};
 
     srand(time(NULL));
 
@@ -110,6 +118,10 @@ int main (int argc, char** argv)
     float b = 0.0f;
 
     glfwSwapInterval(1);
+
+    float incremento = 0.01;
+
+    float xValue = 0.0f;
 
     while(!glfwWindowShouldClose(window))
     {
@@ -121,6 +133,16 @@ int main (int argc, char** argv)
         b = (float)rand()/RAND_MAX;
 
         glUniform4f(location, r, g, b, 1.0f);
+
+        if(xValue < -0.5f)  
+            incremento =  0.01f;
+        if(xValue > 0.5f)
+            incremento = -0.01f;
+
+        xValue += incremento; 
+
+        model = glm::translate(model, glm::vec3(incremento, 0.0f, 0.0f));
+        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
