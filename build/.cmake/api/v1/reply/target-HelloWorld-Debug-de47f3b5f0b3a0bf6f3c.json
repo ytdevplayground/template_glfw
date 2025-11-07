@@ -14,7 +14,8 @@
 		"commands" : 
 		[
 			"add_executable",
-			"target_link_libraries"
+			"target_link_libraries",
+			"include_directories"
 		],
 		"files" : 
 		[
@@ -28,13 +29,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 12,
+				"line" : 14,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 13,
+				"line" : 15,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 8,
 				"parent" : 0
 			}
 		]
@@ -45,11 +52,39 @@
 			"compileCommandFragments" : 
 			[
 				{
+					"fragment" : "-g"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 3,
+					"path" : "D:/template_glfw/extern/glad/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "D:/template_glfw/extern/glfw/include"
+				}
+			],
+			"language" : "C",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"compileCommandFragments" : 
+			[
+				{
 					"fragment" : "-g -std=gnu++20"
 				}
 			],
 			"includes" : 
 			[
+				{
+					"backtrace" : 3,
+					"path" : "D:/template_glfw/extern/glad/include"
+				},
 				{
 					"backtrace" : 2,
 					"path" : "D:/template_glfw/extern/glfw/include"
@@ -66,7 +101,7 @@
 			},
 			"sourceIndexes" : 
 			[
-				0
+				1
 			]
 		}
 	],
@@ -92,11 +127,6 @@
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 2,
-				"fragment" : "-lopengl32",
-				"role" : "libraries"
-			},
-			{
 				"fragment" : "-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32",
 				"role" : "libraries"
 			}
@@ -116,7 +146,8 @@
 			"name" : "Source Files",
 			"sourceIndexes" : 
 			[
-				0
+				0,
+				1
 			]
 		}
 	],
@@ -125,6 +156,12 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
+			"path" : "extern/glad/src/glad.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
 			"path" : "main.cpp",
 			"sourceGroupIndex" : 0
 		}
