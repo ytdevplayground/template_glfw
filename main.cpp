@@ -7,31 +7,34 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <stb_image.h>
 
 const char* vertexSource = R"(#version 460 core
                               
                               layout ( location = 0) in vec3 aPos;
-                              layout ( location = 1) in vec4 aColor;
+                              layout ( location = 1) in vec2 aTexCoord;
 
                               uniform mat4 uModel;
+                              uniform mat4 uView;
                               uniform mat4 uProjection;
 
-                              out vec4 vColor;
+                              out vec2 vTexCoord;
                               
                               void main() {
-                                    gl_Position = uProjection * uModel * vec4(aPos, 1.0f);
-                                    vColor = aColor;
+                                    gl_Position = uProjection * uView * uModel * vec4(aPos, 1.0f);
+                                    vTexCoord = aTexCoord;
                               })";
 
 const char* fragmentSource = R"(#version 460 core
                               
                               out vec4 aColor;
-                              uniform vec4 uColor;
 
-                              in vec4 vColor;
+                              uniform sampler2D uTexture;
+
+                              in vec2 vTexCoord;
                               
                               void main() {
-                                    aColor = vColor;
+                                    aColor = texture(uTexture, vTexCoord);
                               })";
 
 unsigned int createProgram(const char* vertexsrc, const char* fragmentsrc);
@@ -74,77 +77,104 @@ int main (int argc, char** argv)
 
     unsigned int program = createProgram(vertexSource, fragmentSource);
 
-    float triangle [] = {
-        // x,    y,    z        Colors
+    float vertices[] = {
         // Frente
-        -0.5f, -0.5f,  0.5f,    1.0f, 0.0f, 0.0f, 1.0f,// 0
-         0.5f, -0.5f,  0.5f,    0.0f, 1.0f, 0.0f, 1.0f,// 1
-         0.5f,  0.5f,  0.5f,    0.0f, 0.0f, 1.0f, 1.0f,// 2
-        -0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 1.0f, 1.0f,// 3
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
 
         // Trás
-        -0.5f, -0.5f, -0.5f,    1.0f, 1.0f, 0.0f, 1.0f,// 4
-         0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 1.0f, 1.0f,// 5
-         0.5f,  0.5f, -0.5f,    0.5f, 0.5f, 0.5f, 1.0f,// 6
-        -0.5f,  0.5f, -0.5f,    1.0f, 0.5f, 0.5f, 1.0f // 7
-    };
-    unsigned int indices [] = {
-        // Frente
-        0, 1, 2,
-        2, 3, 0,
-
-        // Trás
-        4, 5, 6,
-        6, 7, 4,
-
-        // Esquerda
-        4, 0, 3,
-        3, 7, 4,
+        -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 
         // Direita
-        1, 5, 6,
-        6, 2, 1,
+         0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+
+        // Esquerda
+        -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 
         // Topo
-        3, 2, 6,
-        6, 7, 3,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
 
         // Fundo
-        4, 5, 1,
-        1, 0, 4
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 1.0f
     };
+
+    unsigned int indices[] = {
+        0, 1, 2, 2, 3, 0,       // frente
+        4, 5, 6, 6, 7, 4,       // trás
+        8, 9, 10, 10, 11, 8,       // direita
+        12, 13, 14, 14, 15, 12,       // esquerda
+        16, 17, 18, 18, 19, 16,       // topo
+        20, 21, 22, 22, 23, 20        // fundo
+    };
+
+    int width, height, channel;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data = stbi_load("../cobblestone.png", &width, &height, &channel, 0);
 
     unsigned int VAO;
     unsigned int VBO;
     unsigned int IBO;
+    unsigned int texture;
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &IBO);
+    glGenTextures(1, &texture);
 
     glBindVertexArray(VAO);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), triangle, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GLenum format =  (channel == 4 ? GL_RGBA : GL_RGB);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(data);
+
     glBindVertexArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     glUseProgram(program);
 
-    unsigned int location = glGetUniformLocation(program, "uColor");
+    unsigned int texLocation = glGetUniformLocation(program, "uTexture");
     unsigned int modelLocation = glGetUniformLocation(program, "uModel");
+    unsigned int viewLocation = glGetUniformLocation(program, "uView");
     unsigned int projectionLocation = glGetUniformLocation(program, "uProjection");
 
     srand(time(NULL));
@@ -166,18 +196,22 @@ int main (int argc, char** argv)
         g = (float)rand()/RAND_MAX;
         b = (float)rand()/RAND_MAX;
 
-        glUniform4f(location, r, g, b, 1.0f);
-
         glm::mat4 model{1.0f};
+        glm::mat4 view{1.0f};
         glm::mat4 projection;
 
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -3.0f));
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 1.0f, 1.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         projection = glm::perspective(glm::radians(75.0f), 800.0f/600.0f, 0.1f, 100.0f);
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
+        glUniform1i(texLocation, 0);
 
+        glActiveTexture(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
