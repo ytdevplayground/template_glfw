@@ -1,44 +1,14 @@
 #include <iostream>
 #include <vector>
-#include <cstdlib>
-#include <ctime>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image.h>
+#include <memory>
 
-const char* vertexSource = R"(#version 460 core
-                              
-                              layout ( location = 0) in vec3 aPos;
-                              layout ( location = 1) in vec2 aTexCoord;
-
-                              uniform mat4 uModel;
-                              uniform mat4 uView;
-                              uniform mat4 uProjection;
-
-                              out vec2 vTexCoord;
-                              
-                              void main() {
-                                    gl_Position = uProjection * uView * uModel * vec4(aPos, 1.0f);
-                                    vTexCoord = aTexCoord;
-                              })";
-
-const char* fragmentSource = R"(#version 460 core
-                              
-                              out vec4 aColor;
-
-                              uniform sampler2D uTexture;
-
-                              in vec2 vTexCoord;
-                              
-                              void main() {
-                                    aColor = texture(uTexture, vTexCoord);
-                              })";
-
-unsigned int createProgram(const char* vertexsrc, const char* fragmentsrc);
-unsigned int compileShader(unsigned int type, const char* source);
+#include "Shader.h"
 
 int main (int argc, char** argv)
 {
@@ -75,7 +45,7 @@ int main (int argc, char** argv)
     std::cout << "  VERSION: "  << glGetString(GL_VERSION) << std::endl;
     std::cout << "  RENDERER: " << glGetString(GL_RENDERER) << std::endl;
 
-    unsigned int program = createProgram(vertexSource, fragmentSource);
+    std::shared_ptr<Shader> shader = std::make_shared<Shader>("../res/shaders/textured.vert", "../res/shaders/textured.frag");
 
     float vertices[] = {
         // Frente
@@ -170,20 +140,6 @@ int main (int argc, char** argv)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    glUseProgram(program);
-
-    unsigned int texLocation = glGetUniformLocation(program, "uTexture");
-    unsigned int modelLocation = glGetUniformLocation(program, "uModel");
-    unsigned int viewLocation = glGetUniformLocation(program, "uView");
-    unsigned int projectionLocation = glGetUniformLocation(program, "uProjection");
-
-    srand(time(NULL));
-
-    float r;
-    float g = 0.0f;
-    float b = 0.0f;
-
-    
     glfwSwapInterval(1);
     glEnable(GL_DEPTH_TEST);
 
@@ -191,10 +147,6 @@ int main (int argc, char** argv)
     {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        r = (float)rand()/RAND_MAX;
-        g = (float)rand()/RAND_MAX;
-        b = (float)rand()/RAND_MAX;
 
         glm::mat4 model{1.0f};
         glm::mat4 view{1.0f};
@@ -205,10 +157,14 @@ int main (int argc, char** argv)
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         projection = glm::perspective(glm::radians(75.0f), 800.0f/600.0f, 0.1f, 100.0f);
         view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
-        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
-        glUniform1i(texLocation, 0);
+
+        shader->Bind();
+        
+        shader->SetMat4("uModel", model);
+        shader->SetMat4("uProjection", projection);
+        shader->SetMat4("uView", view);
+        shader->SetInt("uTexture", 0);
+
 
         glActiveTexture(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -216,70 +172,12 @@ int main (int argc, char** argv)
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
 
+        shader->Unbind();
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteProgram(program);
-
     return 0;
 
-}
-
-unsigned int createProgram(const char *vertexsrc, const char *fragmentsrc)
-{
-
-    unsigned int program = glCreateProgram();
-
-    unsigned int vs = compileShader(GL_VERTEX_SHADER, vertexsrc);
-    unsigned int fs = compileShader(GL_FRAGMENT_SHADER, fragmentsrc);
-
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
-
-    glLinkProgram(program);
-
-    int sucess;
-    glGetProgramiv(program, GL_LINK_STATUS, &sucess);
-
-    if(!sucess)
-    {
-        int length;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
-        std::vector<char> log(length);
-        glGetProgramInfoLog(program, length, nullptr, log.data());
-
-        std::cout << "Link error: " << log.data() << std::endl;
-
-    }
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    return program;
-}
-
-unsigned int compileShader(unsigned int type, const char* source)
-{
-
-    unsigned int shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, nullptr);
-
-    glCompileShader(shader);
-
-    int sucess;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &sucess);
-
-    if(!sucess)
-    {
-        int length;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-        std::vector<char> log(length);
-        glGetShaderInfoLog(shader, length, nullptr, log.data());
-
-        std::cout << "Compile error: " << log.data() << std::endl;
-
-    }
-
-    return shader;
 }
