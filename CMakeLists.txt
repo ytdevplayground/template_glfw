@@ -12,6 +12,8 @@ add_subdirectory(extern/glfw)
 add_subdirectory(extern/glm)
 
 SET(SOURCES extern/glad/src/glad.c
+           src/renderer/vertexBuffer.cpp
+           src/renderer/indexBuffer.cpp
            src/renderer/shader.cpp
                         main.cpp)
 

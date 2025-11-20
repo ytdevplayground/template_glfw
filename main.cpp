@@ -9,6 +9,8 @@
 #include <memory>
 
 #include "Shader.h"
+#include "vertexBuffer.h"
+#include "indexBuffer.h"
 
 int main (int argc, char** argv)
 {
@@ -99,29 +101,23 @@ int main (int argc, char** argv)
     unsigned char* data = stbi_load("../cobblestone.png", &width, &height, &channel, 0);
 
     unsigned int VAO;
-    unsigned int VBO;
-    unsigned int IBO;
     unsigned int texture;
 
     glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &IBO);
     glGenTextures(1, &texture);
 
     glBindVertexArray(VAO);
     glBindTexture(GL_TEXTURE_2D, texture);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
+    
+    std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(vertices, sizeof(vertices));
+    
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
 
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indices, sizeof(indices) / sizeof(unsigned int));
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -136,8 +132,8 @@ int main (int argc, char** argv)
 
     glBindVertexArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    vertexBuffer->Unbind();
+    indexBuffer->Unbind();
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glfwSwapInterval(1);
